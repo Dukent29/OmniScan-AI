@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Local runtime data
+temp_uploads/
+uploads/
+
+# Trained models / heavy artifacts
+my_model.h5
+my_model.keras
+my_model_labels.json
+*.ckpt
+*.tflite
+
+# Logs / notebooks
+*.log
+.ipynb_checkpoints/
+
+# Secrets / environment
+.env
+.env.*
+/dataset
+

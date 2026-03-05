@@ -1,0 +1,7 @@
+tensorflow      # For the AI model
+pymongo         # To connect to MongoDB
+fastapi         # To build the API
+uvicorn         # To run the API
+streamlit       # To create the User Interface quickly
+python-multipart # To handle file uploads
+pillow          # To process images (PIL)
