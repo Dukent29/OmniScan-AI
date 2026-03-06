@@ -1,4 +1,4 @@
-# Projet IA - Classification d'images (Big Data)
+# TP- Classification d'images (Big Data)
 
 ## 1. Objectif du projet
 Ce projet permet de:
