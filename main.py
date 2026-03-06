@@ -1,5 +1,5 @@
-# FILE: main.py
-# ROLE: The User Interface (Streamlit). Connects AI and MongoDB.
+# FICHIER: main.py
+# ROLE: Interface utilisateur Streamlit qui connecte l IA et MongoDB.
 
 import streamlit as st
 import os
@@ -7,9 +7,9 @@ from database_manager import save_analysis, get_all_records, delete_record, save
 from dataset_manager import add_dataset_entries, add_dataset_entry, ALLOWED_TYPES
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="NFS AI Classifier", layout="wide")
+st.set_page_config(page_title="Classificateur IA NFS", layout="wide")
 
-# --- MODERN DARK THEME CSS ---
+# --- CSS THEME MODERNE ---
 st.markdown(
     """
     <style>
@@ -29,14 +29,14 @@ st.markdown(
         --radius: 16px;
     }
 
-    /* App background + main width */
+    /* Fond application + largeur principale */
     .stApp { background: var(--bg); color: var(--text); }
 .block-container {
     max-width: 1500px;
     padding-top: 1.2rem;
 }
 
-    /* Titles */
+    /* Titres */
     h1, h2, h3, .stMarkdown, .stText { color: var(--text); }
     .section-title {
         font-size: 1.35rem;
@@ -47,10 +47,10 @@ st.markdown(
     }
     .section-sub { color: var(--muted); margin-bottom: 0.9rem; }
 
-    /* Subtle separator */
+    /* Separateur discret */
     .soft-sep { border-top: 1px solid var(--border); margin: 16px 0; opacity: 0.7; }
 
-    /* Result card */
+    /* Carte de resultat */
     .result-card{
         background: radial-gradient(1200px 600px at 10% 0%, rgba(110,231,255,0.10), transparent 40%),
                     radial-gradient(1200px 600px at 90% 20%, rgba(167,139,250,0.10), transparent 45%),
@@ -65,7 +65,7 @@ st.markdown(
     .result-line{ font-size: 0.95rem; color: var(--muted); margin-top: 6px; }
     .result-line b{ color: var(--text); font-weight: 700; }
 
-    /* Streamlit containers (border=True) -> make them look like cards */
+    /* Conteneurs Streamlit (border=True) -> style carte */
     div[data-testid="stContainer"][style]{
         background: var(--surface);
         border: 1px solid var(--border) !important;
@@ -73,7 +73,7 @@ st.markdown(
         padding: 14px 14px 10px 14px;
     }
 
-    /* Inputs */
+    /* Champs de saisie */
     div[data-testid="stFileUploader"] section,
     div[data-testid="stTextInput"] input,
     div[data-testid="stTextArea"] textarea,
@@ -85,14 +85,14 @@ st.markdown(
         color: var(--text) !important;
     }
 
-    /* Expander header */
+    /* Entete expander */
     details summary{
         background: transparent !important;
         color: var(--text) !important;
         font-weight: 750;
     }
 
-    /* Chips */
+    /* Pastilles */
     .chip{
         display:inline-flex;
         align-items:center;
@@ -117,7 +117,7 @@ st.markdown(
         color: rgba(253,230,138,0.95);
     }
 
-    /* Progress bar */
+    /* Barre de progression */
     .bar{
         width:100%;
         height:10px;
@@ -134,7 +134,7 @@ st.markdown(
         background: linear-gradient(90deg, var(--accent), var(--accent-2));
     }
 
-    /* Buttons */
+    /* Boutons */
     div[data-testid="stButton"] > button{
         border-radius: 12px;
         font-weight: 750;
@@ -164,7 +164,7 @@ st.markdown(
         background: rgba(255,92,122,0.16);
     }
 
-    /* Make captions less loud */
+    /* Captions moins visibles */
     .stCaption { color: var(--muted-2) !important; }
 
     </style>
@@ -176,18 +176,18 @@ st.markdown(
 def _build_fun_note(type_label: str, detail_label: str, match_score: float) -> str:
     low = (detail_label or "").strip().lower()
     if "baby yoda" in low or "grogu" in low:
-        return f"Force Match unlocked for Grogu: {match_score:.2f}%"
+        return f"Correspondance Force activee pour Grogu: {match_score:.2f}%"
     if type_label == "hand-signs":
-        return f"Gesture sync score: {match_score:.2f}%"
+        return f"Score synchronisation geste: {match_score:.2f}%"
     if type_label == "vehicles":
-        return f"Garage match score: {match_score:.2f}%"
-    return f"Visual match score: {match_score:.2f}%"
+        return f"Score correspondance garage: {match_score:.2f}%"
+    return f"Score correspondance visuelle: {match_score:.2f}%"
 
 
 def _pct_from_any(value) -> float:
     """
-    Converts: '0.934', 0.934, '93.4%', '93.4' -> 93.4
-    If input is 0..1 we assume it's probability and scale to 0..100.
+    Convertit: '0.934', 0.934, '93.4%', '93.4' -> 93.4
+    Si la valeur est entre 0 et 1, on la traite comme probabilité.
     """
     if value is None:
         return 0.0
@@ -209,7 +209,7 @@ def _bar(pct: float) -> str:
     """
 
 
-# --- TOASTS / LATEST RESULT ---
+# --- TOASTS / DERNIER RESULTAT ---
 if "ui_feedback" in st.session_state:
     st.success(st.session_state["ui_feedback"])
     del st.session_state["ui_feedback"]
@@ -219,14 +219,14 @@ if "ui_result" in st.session_state:
     st.markdown(
         f"""
         <div class="result-card">
-            <div class="result-title">Latest AI Analysis</div>
-            <div class="result-line"><b>Class:</b> {result['type']}</div>
-            <div class="result-line"><b>Name (Label):</b> {result['label']}</div>
+            <div class="result-title">Derniere analyse IA</div>
+            <div class="result-line"><b>Classe:</b> {result['type']}</div>
+            <div class="result-line"><b>Nom (label):</b> {result['label']}</div>
             <div class="result-line"><b>Description:</b> {result['description']}</div>
             <div class="result-line">
                 <b>Type %:</b> {result['type_score']} |
                 <b>Label %:</b> {result['label_score']} |
-                <b>Match %:</b> {result['match_score']}
+                <b>Correspondance %:</b> {result['match_score']}
             </div>
         </div>
         """,
@@ -236,25 +236,25 @@ if "ui_result" in st.session_state:
     del st.session_state["ui_result"]
 
 
-# --- HEADER ---
-st.title("AI Image Multi-Classifier")
-st.write("Upload an image to identify: Humans, Fictional Characters, Plants, Vehicles, or Animals.")
+# --- EN-TETE ---
+st.title("Classificateur IA d images")
+st.write("Chargez une image pour identifier: humains, personnages fictifs, plantes, vehicules ou animaux.")
 
 
 def render_workspace() -> None:
-    st.markdown('<div class="section-title">Workspace</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Analyze image and add training samples</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Espace de travail</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Analyser des images et ajouter des exemples d entrainement</div>', unsafe_allow_html=True)
 
-    st.subheader("Analysis")
+    st.subheader("Analyse")
     source_mode = st.radio(
         label="source",
-        options=["File", "Camera"],
+        options=["Fichier", "Camera"],
         horizontal=True,
         label_visibility="collapsed",
         key="analysis_mode",
     )
 
-    if source_mode == "File":
+    if source_mode == "Fichier":
         input_file = st.file_uploader(
             label="upload",
             type=["jpg", "png", "jpeg"],
@@ -276,10 +276,10 @@ def render_workspace() -> None:
         with open(file_path, "wb") as f:
             f.write(input_file.getbuffer())
 
-        st.image(file_path, caption="Image to analyze", width=320)
+        st.image(file_path, caption="Image a analyser", width=320)
 
-        if st.button("Start AI Recognition", type="primary"):
-            with st.spinner("AI is processing..."):
+        if st.button("Lancer la reconnaissance IA", type="primary"):
+            with st.spinner("Traitement IA en cours..."):
                 from vision_engine import analyze_image, get_label_description
 
                 type_label, type_confidence, detail_label, detail_confidence = analyze_image(file_path)
@@ -301,13 +301,13 @@ def render_workspace() -> None:
                 fun_note = _build_fun_note(type_label, detail_label, match_score)
 
                 st.session_state["ui_feedback"] = (
-                    f"Analysis saved. Type: {type_label} | Label: {detail_label} | "
-                    f"Confidence: {round(type_confidence * 100, 2)}%"
+                    f"Analyse enregistree. Type: {type_label} | Label: {detail_label} | "
+                    f"Confiance: {round(type_confidence * 100, 2)}%"
                 )
                 st.session_state["ui_result"] = {
                     "type": type_label,
                     "label": detail_label,
-                    "description": detail_description or "No description found for this label yet.",
+                    "description": detail_description or "Aucune description disponible pour ce label.",
                     "type_score": round(type_confidence * 100, 2),
                     "label_score": round(detail_confidence * 100, 2),
                     "match_score": match_score,
@@ -317,25 +317,25 @@ def render_workspace() -> None:
 
     st.markdown('<div class="soft-sep"></div>', unsafe_allow_html=True)
 
-    st.subheader("Add Training Data")
+    st.subheader("Ajouter des donnees d entrainement")
     dataset_images = st.file_uploader(
-        "Add images to dataset",
+        "Ajouter des images au dataset",
         type=["jpg", "jpeg", "png", "webp", "bmp"],
         accept_multiple_files=True,
         key="dataset_uploader_multi",
     )
 
     if not dataset_images:
-        st.info("Select one or multiple images to start.")
+        st.info("Selectionnez une ou plusieurs images pour commencer.")
         return
 
-    st.caption(f"{len(dataset_images)} file(s) selected.")
+    st.caption(f"{len(dataset_images)} fichier(s) selectionne(s).")
     entries = []
     for i, img in enumerate(dataset_images):
         with st.expander(f"Metadata: {img.name}", expanded=(i == 0)):
             class_name = st.selectbox("Type", options=ALLOWED_TYPES, key=f"type_{i}")
-            label = st.text_input("Label", key=f"label_{i}", placeholder="Example: open hand, Batman, lion, motorcycle")
-            description = st.text_area("Description", key=f"desc_{i}", placeholder="Short context for training/reference.")
+            label = st.text_input("Label", key=f"label_{i}", placeholder="Exemple: main ouverte, Batman, lion, moto")
+            description = st.text_area("Description", key=f"desc_{i}", placeholder="Contexte court pour reference et entrainement.")
         entries.append(
             {
                 "image_bytes": img.getvalue(),
@@ -346,7 +346,7 @@ def render_workspace() -> None:
             }
         )
 
-    if st.button("Add All To Dataset", type="primary"):
+    if st.button("Ajouter tout au dataset", type="primary"):
         try:
             saved_paths = add_dataset_entries(entries)
             for entry, saved_path in zip(entries, saved_paths):
@@ -358,27 +358,27 @@ def render_workspace() -> None:
                     description=entry.get("description", ""),
                     source_path=str(saved_path),
                 )
-            st.session_state["ui_feedback"] = (
-                f"Saved {len(saved_paths)} image(s) to dataset. Next step: run `python train_model.py`."
-            )
-            st.rerun()
+                st.session_state["ui_feedback"] = (
+                    f"{len(saved_paths)} image(s) ajoutee(s) au dataset. Etape suivante: lancer `python train_model.py`."
+                )
+                st.rerun()
         except Exception as exc:
-            st.error(f"Failed to add dataset entries: {exc}")
+            st.error(f"Echec lors de l ajout des entrees dataset: {exc}")
 
 
 def render_history() -> None:
-    st.markdown('<div class="section-title">History</div>', unsafe_allow_html=True)
-    st.markdown('<div class="section-sub">Structured database records and actions</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Historique</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sub">Enregistrements structures de la base et actions</div>', unsafe_allow_html=True)
 
     history = get_all_records()
     if not history:
-        st.info("The database is currently empty.")
+        st.info("La base de donnees est vide.")
         return
 
-    st.caption("Recent analyses (newest first)")
+    st.caption("Analyses recentes (les plus nouvelles en premier)")
     st.markdown('<div class="soft-sep"></div>', unsafe_allow_html=True)
 
-    # Feed-like rows (more modern than fake table)
+        # Lignes de type feed pour un rendu moderne
     for record in history:
         analysis = record.get("Analysis", {})
         record_id = str(record["_id"])
@@ -406,7 +406,7 @@ def render_history() -> None:
                 if source_path and os.path.exists(source_path):
                     st.image(source_path, width=72)
                 else:
-                    st.markdown('<span class="chip">no image</span>', unsafe_allow_html=True)
+                    st.markdown('<span class="chip">aucune image</span>', unsafe_allow_html=True)
 
             # Main info
             with top[1]:
@@ -422,22 +422,22 @@ def render_history() -> None:
             # Actions
             with top[2]:
                 a = st.columns([1, 1], vertical_alignment="center")
-                use_clicked = a[0].button("Use", key=f"use_{record_id}", help="Use this result for training", type="primary")
-                del_clicked = a[1].button("Delete", key=f"del_{record_id}", help="Delete this record", type="secondary")
+                use_clicked = a[0].button("Compenser", key=f"use_{record_id}", help="Utiliser ce resultat pour l entrainement", type="primary")
+                del_clicked = a[1].button("Supprimer", key=f"del_{record_id}", help="Supprimer cet enregistrement", type="secondary")
 
-                # Score bars under actions
-                st.caption("Type confidence")
+                # Barres de score sous les actions
+                st.caption("Confiance type")
                 st.markdown(_bar(type_pct), unsafe_allow_html=True)
-                st.caption("Label confidence")
+                st.caption("Confiance label")
                 st.markdown(_bar(label_pct), unsafe_allow_html=True)
-                st.caption("Match")
+                st.caption("Correspondance")
                 st.markdown(_bar(match_pct), unsafe_allow_html=True)
 
             if use_clicked:
                 if not source_path or not os.path.exists(source_path):
-                    st.warning("Cannot add to training: source image file is not available for this record.")
+                    st.warning("Impossible d ajouter a l entrainement: le fichier source est indisponible.")
                 elif predicted_type not in ALLOWED_TYPES:
-                    st.warning(f"Type '{predicted_type}' is not in allowed dataset classes: {ALLOWED_TYPES}")
+                    st.warning(f"Le type '{predicted_type}' n est pas dans les classes autorisees: {ALLOWED_TYPES}")
                 else:
                     with open(source_path, "rb") as fh:
                         image_bytes = fh.read()
@@ -458,24 +458,24 @@ def render_history() -> None:
                         source_path=source_path,
                     )
                     st.session_state["ui_feedback"] = (
-                        "Validated sample added to dataset. Run `python train_model.py` to update the model."
+                        "Echantillon valide ajoute au dataset. Lancez `python train_model.py` pour mettre a jour le modele."
                     )
                     st.rerun()
 
             if del_clicked:
                 delete_record(record["_id"])
-                st.toast(f"Deleted {record.get('Name')}")
+                st.toast(f"Supprime: {record.get('Name')}")
                 st.rerun()
 
-            with st.expander("Correct & Add", expanded=False):
+            with st.expander("Corriger et ajouter", expanded=False):
                 corrected_type = st.selectbox(
-                    "Correct Type",
+                    "Type corrige",
                     options=ALLOWED_TYPES,
                     index=ALLOWED_TYPES.index(predicted_type) if predicted_type in ALLOWED_TYPES else 0,
                     key=f"corr_type_{record_id}",
                 )
                 corrected_label = st.text_input(
-                    "Correct Label",
+                    "Label corrige",
                     value=predicted_label or "",
                     key=f"corr_label_{record_id}",
                 )
@@ -483,15 +483,15 @@ def render_history() -> None:
                     "Description",
                     value="",
                     key=f"corr_desc_{record_id}",
-                    placeholder="Example: left hand showing L sign on plain background.",
+                    placeholder="Exemple: main gauche montrant un signe L sur fond uni.",
                 )
                 replacement_file = st.file_uploader(
-                    "Optional: upload replacement image if original source is missing",
+                    "Optionnel: charger une image de remplacement si la source originale est absente",
                     type=["jpg", "jpeg", "png", "webp", "bmp"],
                     key=f"corr_file_{record_id}",
                 )
 
-                if st.button("Add Corrected Sample", key=f"corr_add_{record_id}", type="primary"):
+                if st.button("Ajouter l echantillon corrige", key=f"corr_add_{record_id}", type="primary"):
                     os.makedirs("temp_uploads", exist_ok=True)
                     fallback_path = os.path.join("temp_uploads", str(record.get("Name") or ""))
 
@@ -509,7 +509,7 @@ def render_history() -> None:
                         original_name = record.get("Name") or os.path.basename(usable_path)
                         used_source_path = usable_path
                     else:
-                        st.warning("No source image found. Upload a replacement image to add corrected sample.")
+                        st.warning("Aucune image source trouvee. Chargez une image de remplacement.")
                         image_bytes = None
                         original_name = None
                         used_source_path = None
@@ -531,12 +531,12 @@ def render_history() -> None:
                             source_path=used_source_path or source_path,
                         )
                         st.session_state["ui_feedback"] = (
-                            "Corrected sample added to dataset. Run `python train_model.py` to update the model."
+                            "Echantillon corrige ajoute au dataset. Lancez `python train_model.py` pour mettre a jour le modele."
                         )
                         st.rerun()
 
 
-# --- MAIN LAYOUT ---
+# --- LAYOUT PRINCIPAL ---
 left_col, right_col = st.columns([0.95, 1.55], gap="large")
 with left_col:
     with st.container(border=True):

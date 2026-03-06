@@ -1,5 +1,5 @@
-# FILE: database_manager.py
-# ROLE: Handles all communication with MongoDB (Saving, Listing, Deleting).
+# FICHIER: database_manager.py
+# ROLE: Gère toute la communication MongoDB (sauvegarde, lecture, suppression).
 
 import argparse
 from datetime import datetime, timezone
@@ -34,7 +34,7 @@ def save_analysis(
     source_path=None,
 ):
     """
-    Saves the analysis results into MongoDB.
+    Sauvegarde les résultats d'analyse dans MongoDB.
     """
     match_score = round(((float(type_confidence) + float(detail_confidence or type_confidence)) / 2.0), 6)
     document = {
@@ -58,7 +58,7 @@ def save_analysis(
 
 def save_training_entry(file_name, file_size, class_name, label, description, source_path=None):
     """
-    Saves a training dataset insertion event into MongoDB.
+    Sauvegarde un événement d'ajout au dataset d'entraînement dans MongoDB.
     """
     document = {
         "Date": datetime.now(timezone.utc),
@@ -75,15 +75,15 @@ def save_training_entry(file_name, file_size, class_name, label, description, so
 
 def get_all_records():
     """
-    Returns all analyzed images from the database.
-    Used for the 'History' section of your app.
+    Retourne toutes les images analysées dans la base.
+    Utilisé pour la section 'Historique' de l'application.
     """
     return list(_get_collection().find())
 
 
 def delete_record(record_id):
     """
-    Deletes a specific record using its unique MongoDB ID.
+    Supprime un enregistrement via son identifiant MongoDB.
     """
     from bson.objectid import ObjectId
 
@@ -91,7 +91,7 @@ def delete_record(record_id):
 
 def analyze_and_save(image_path):
     """
-    Runs AI analysis on the image then saves the result in MongoDB.
+    Lance l'analyse IA sur l'image puis sauvegarde le résultat dans MongoDB.
     """
     from vision_engine import analyze_image
 

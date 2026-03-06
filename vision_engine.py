@@ -1,7 +1,7 @@
-# FILE: vision_engine.py
-# ROLE: Two-stage inference.
-# Stage 1 = custom class model (humans, hand-signs, fictional, animals, vehicles)
-# Stage 2 = subtype matcher (peace, loser, specific vehicle model, etc.)
+# FICHIER: vision_engine.py
+# ROLE: Moteur d'inférence en deux étages.
+# Etage 1 = modèle de classe globale (humans, hand-signs, fictional, animals, vehicles)
+# Etage 2 = matching de sous-type (peace, loser, modèle véhicule, etc.)
 
 import csv
 import json
@@ -20,10 +20,10 @@ DATASET_DIR = BASE_DIR / "dataset"
 METADATA_CSV = DATASET_DIR / "image_descriptions.csv"
 
 
-# Stage 1 model: trained class predictor
+# Modèle Etage 1: prédiction de la classe globale
 model = tf.keras.models.load_model(str(MODEL_PATH))
 
-# Stage 2 model: feature extractor for visual nearest-neighbor subtype match
+# Modèle Etage 2: extracteur de features pour matching visuel de sous-type
 feature_extractor = MobileNetV2(weights="imagenet", include_top=False, pooling="avg")
 
 
@@ -92,6 +92,10 @@ SUBTYPE_REFS_MTIME = _csv_mtime()
 LABEL_DESCRIPTIONS = {}
 
 
+def _norm_text(value: str) -> str:
+    return (value or "").strip().lower()
+
+
 def _ensure_subtype_refs_fresh():
     global SUBTYPE_REFS
     global SUBTYPE_REFS_MTIME
@@ -112,8 +116,8 @@ def _build_label_descriptions():
     with METADATA_CSV.open("r", encoding="utf-8", newline="") as fh:
         reader = csv.DictReader(fh)
         for row in reader:
-            class_name = (row.get("class_name") or "").strip()
-            label = (row.get("label") or "").strip()
+            class_name = _norm_text(row.get("class_name") or "")
+            label = _norm_text(row.get("label") or "")
             desc = (row.get("description") or "").strip()
             if not class_name or not label or not desc:
                 continue
@@ -121,6 +125,10 @@ def _build_label_descriptions():
             # Keep first non-empty description as canonical text
             descriptions[class_name].setdefault(label, desc)
     return descriptions
+
+
+# Initialisation immédiate des descriptions au démarrage
+LABEL_DESCRIPTIONS = _build_label_descriptions()
 
 
 def _predict_subtype(img_path: str, predicted_class: str, k: int = 5):
@@ -146,28 +154,28 @@ def _predict_subtype(img_path: str, predicted_class: str, k: int = 5):
 
 def get_label_description(class_name: str, label: str) -> str:
     _ensure_subtype_refs_fresh()
-    return LABEL_DESCRIPTIONS.get(class_name, {}).get(label, "")
+    return LABEL_DESCRIPTIONS.get(_norm_text(class_name), {}).get(_norm_text(label), "")
 
 
 def analyze_image(img_path):
     """
-    Returns:
-    - type_label: Stage-1 broad category
-    - type_confidence: Stage-1 confidence
-    - detail_label: Stage-2 subtype label
-    - detail_confidence: Stage-2 confidence
+    Retourne:
+    - type_label: classe globale (etage 1)
+    - type_confidence: confiance etage 1
+    - detail_label: sous-type (etage 2)
+    - detail_confidence: confiance etage 2
     """
     img = tf.keras.utils.load_img(img_path, target_size=(224, 224))
     x = tf.keras.utils.img_to_array(img)
     x = np.expand_dims(x, axis=0)
 
-    # Stage 1
+    # Etage 1
     preds = model.predict(x, verbose=0)
     idx = int(np.argmax(preds[0]))
     type_label = class_names[idx]
     type_confidence = float(preds[0][idx])
 
-    # Stage 2
+    # Etage 2
     detail_label, detail_confidence = _predict_subtype(img_path, type_label)
     if not detail_label:
         detail_label = type_label

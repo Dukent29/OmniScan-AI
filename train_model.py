@@ -4,7 +4,7 @@ import csv
 import json
 from pathlib import Path
 
-# --- CONFIG ---
+# --- CONFIGURATION ---
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "dataset"
 IMG_SIZE = (224, 224)
@@ -12,7 +12,7 @@ BATCH_SIZE = 4
 HEAD_EPOCHS = 5
 FINETUNE_EPOCHS = 10
 
-# Use only requested categories (folder names in dataset/)
+# Utiliser uniquement les catégories demandées (noms de dossiers dans dataset/)
 SELECTED_CLASS_DIRS = ["humans", "hand-signs", "fictional", "animals", "vehicles"]
 LABELS_PATH = BASE_DIR / "my_model_labels.json"
 DESCRIPTIONS_CSV = DATA_DIR / "image_descriptions.csv"
@@ -20,8 +20,8 @@ DESCRIPTIONS_CSV = DATA_DIR / "image_descriptions.csv"
 
 def _load_description_stats(csv_path: Path, selected_classes: list[str]) -> tuple[int, int]:
     """
-    Count how many selected images have non-empty descriptions.
-    Descriptions are not fed into this CNN model; this is tracking/quality metadata.
+    Compte le nombre d'images sélectionnées avec description non vide.
+    Ces descriptions ne sont pas utilisées directement dans le CNN (métadonnées de suivi).
     """
     if not csv_path.exists():
         return 0, 0
@@ -39,7 +39,7 @@ def _load_description_stats(csv_path: Path, selected_classes: list[str]) -> tupl
                 described += 1
     return described, total
 
-# 1. LOAD DATA (With validation)
+# 1. CHARGEMENT DES DONNÉES (avec validation)
 train_ds = tf.keras.utils.image_dataset_from_directory(
     str(DATA_DIR),
     class_names=SELECTED_CLASS_DIRS,
@@ -69,7 +69,7 @@ if total > 0:
 else:
     print(f"No descriptions file found for tracking at {DESCRIPTIONS_CSV}")
 
-# 2. DATA AUGMENTATION
+# 2. AUGMENTATION DES DONNÉES
 data_augmentation = tf.keras.Sequential(
     [
         layers.RandomFlip("horizontal"),
@@ -78,12 +78,12 @@ data_augmentation = tf.keras.Sequential(
     ]
 )
 
-# 3. BUILD THE MODEL
+# 3. CONSTRUCTION DU MODÈLE
 base_model = tf.keras.applications.MobileNetV2(
     input_shape=(224, 224, 3), include_top=False, weights="imagenet"
 )
 
-# IMPORTANT: Start by freezing the base
+# IMPORTANT: on commence en gelant la base pré-entraînée
 base_model.trainable = False
 
 model = models.Sequential([
@@ -94,16 +94,16 @@ model = models.Sequential([
     layers.Dense(len(class_names), activation="softmax"),
 ])
 
-# 4. FIRST PHASE: Train the new head (5 Epochs)
+# 4. PREMIÈRE PHASE: entraînement de la tête (5 epochs)
 model.compile(optimizer="adam", loss="sparse_categorical_crossentropy", metrics=["accuracy"])
 print("Phase 1: Training the top layers...")
 model.fit(train_ds, validation_data=val_ds, epochs=HEAD_EPOCHS)
 
-# 5. SECOND PHASE: Fine-Tuning (Unfreeze the base)
+# 5. DEUXIÈME PHASE: fine-tuning (dé-geler la base)
 print("Phase 2: Fine-tuning the whole brain...")
 base_model.trainable = True
 
-# We use a VERY small learning rate so we don't break the pre-trained knowledge
+# On utilise un très petit learning rate pour préserver le savoir pré-entraîné
 model.compile(
     optimizer=tf.keras.optimizers.Adam(1e-5),
     loss="sparse_categorical_crossentropy",
@@ -112,7 +112,7 @@ model.compile(
 
 model.fit(train_ds, validation_data=val_ds, epochs=FINETUNE_EPOCHS)
 
-# 6. SAVE
+# 6. SAUVEGARDE
 model.save("my_model.h5")
 with open(LABELS_PATH, "w", encoding="utf-8") as fh:
     json.dump(class_names, fh, ensure_ascii=True, indent=2)
